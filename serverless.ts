@@ -1,6 +1,7 @@
 // import { DynamoDB } from 'aws-sdk';
 // import { table } from 'console';
 
+import { readFileSync } from 'fs';
 import type { Serverless } from 'serverless/aws';
 
 const serverlessConfiguration: Serverless = {
@@ -15,10 +16,24 @@ const serverlessConfiguration: Serverless = {
     webpack: {
       webpackConfig: './webpack.config.js',
       includeModules: true
+    },
+    documentation: {
+      api: {
+        info: {
+          version: 'v1.0.0',
+          title: 'Udagram API',
+          description: 'Serverless application for images sharing'
+        }
+      },
+      models: {
+        name: 'GroupRequest',
+        contentType: 'application/json',
+        schema: '${file(models/create-group-request.json)}'
+      }
     }
   },
   // Add the serverless-webpack plugin
-  plugins: ['serverless-webpack'],
+  plugins: ['serverless-webpack', 'serverless-reqvalidator-plugin', 'serverless-aws-documentation'],
   provider: {
     name: 'aws',
     runtime: 'nodejs12.x',
@@ -59,39 +74,58 @@ const serverlessConfiguration: Serverless = {
           http: {
             method: 'post',
             path: 'groups',
-            cors: true
+            cors: true,
+            request: {
+              schema: {
+                'applicaton/json': '${file(models/create-group-request.json)}'
+              }
+            },
+            documentation: {
+              summary: 'Create a new group',
+              description: 'Create a new group',
+              requestModels: {
+                'application/json': 'GroupRequest'
+              }
+            }
           }
         }
       ]
-    }
+    },
   },
   resources: {
     Resources: {
-       GroupsDynamoDBTable: {
-          Type: "AWS::DynamoDB::Table",
-          Properties: {
-             AttributeDefinitions: [
-                {
-                   "AttributeName": "id",
-                   "AttributeType": "S"
-                }
-             ],
-             KeySchema: [
-                {
-                   "AttributeName": "id",
-                   "KeyType": "HASH"
-                }
-             ],
-             BillingMode: "PAY_PER_REQUEST",
-             TableName: "${self:provider.environment.GROUPS_TABLE}"
-          }
-       }
+      RequestBodyValidator: {
+        Type: 'AWS::ApiGateway::RequestValidator',
+        Properties: {
+          Name: 'request-body-validator',
+          RestApiId: {
+            Ref: 'ApiGatewayRestApi'
+          },
+          ValidateRequestBody: true,
+          ValidateRequestParameters: false
+        }
+      },
+      GroupsDynamoDBTable: {
+        Type: "AWS::DynamoDB::Table",
+        Properties: {
+            AttributeDefinitions: [
+              {
+                  "AttributeName": "id",
+                  "AttributeType": "S"
+              }
+            ],
+            KeySchema: [
+              {
+                  "AttributeName": "id",
+                  "KeyType": "HASH"
+              }
+            ],
+            BillingMode: "PAY_PER_REQUEST",
+            TableName: "${self:provider.environment.GROUPS_TABLE}"
+        }
+      }
     }
  }
-
-
-
-
 }
 
 module.exports = serverlessConfiguration;
