@@ -1,7 +1,6 @@
 // import { DynamoDB } from 'aws-sdk';
 // import { table } from 'console';
 
-import { readFileSync } from 'fs';
 import type { Serverless } from 'serverless/aws';
 
 const serverlessConfiguration: Serverless = {
@@ -77,7 +76,7 @@ const serverlessConfiguration: Serverless = {
             cors: true,
             request: {
               schema: {
-                'applicaton/json': '${file(models/create-group-request.json)}'
+                ['applicaton/json']: '${file(models/create-group-request.json)}'
               }
             },
             documentation: {
